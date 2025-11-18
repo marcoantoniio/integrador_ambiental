@@ -1,7 +1,7 @@
 streamlit
 pandas
 numpy
-psycopg2-binary
+psycopg2
 plotly
 scikit-learn
 statsmodels
