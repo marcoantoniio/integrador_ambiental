@@ -112,65 +112,78 @@ if page == "Dashboard Geral":
     st.markdown("---")
 
     st.subheader("Estatísticas principais (Iluminação)")
-
     c1,c2,c3,c4,c5 = st.columns(5)
     c1.markdown(f'<div class="card"><div class="metric-number">{agg["ilum_mean"].mean():.2f}</div>Média</div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="card"><div class="metric-number">{agg["ilum_median"].median():.2f}</div>Mediana</div>', unsafe_allow_html=True)
     c3.markdown(f'<div class="card"><div class="metric-number">{agg["ilum_min"].min():.2f}</div>Mínimo</div>', unsafe_allow_html=True)
     c4.markdown(f'<div class="card"><div class="metric-number">{agg["ilum_max"].max():.2f}</div>Máximo</div>', unsafe_allow_html=True)
     c5.markdown(f'<div class="card"><div class="metric-number">{agg["ilum_std"].mean():.2f}</div>Desvio Padrão</div>', unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Temperatura (Média Diária)", 
+        "Iluminação (Média Diária)", 
+        "Correlação", 
+        "Previsão"
+    ])
 
+    with tab1:
+        st.subheader("Temperatura — média diária")
+        fig = px.line(agg, x="dia", y="temp_mean", markers=True)
+        fig.update_layout(template="plotly_white")
+        st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("Temperatura — média diária")
-    fig = px.line(agg, x="dia", y="temp_mean", markers=True)
-    fig.update_layout(template="plotly_white")
-    st.plotly_chart(fig, use_container_width=True)
+    with tab2:
+        st.subheader("Iluminação — média diária")
+        fig2 = px.line(agg, x="dia", y="ilum_mean", markers=True)
+        fig2.update_layout(template="plotly_white")
+        st.plotly_chart(fig2, use_container_width=True)
 
-    st.subheader("Iluminação — média diária")
-    fig2 = px.line(agg, x="dia", y="ilum_mean", markers=True)
-    fig2.update_layout(template="plotly_white")
-    st.plotly_chart(fig2, use_container_width=True)
+    with tab3:
+        st.subheader("Correlação entre temperatura e iluminação")
+        fig_scatter = px.scatter(
+            agg,
+            x="ilum_mean",
+            y="temp_mean",
+            trendline="ols",
+            labels={"ilum_mean": "Iluminação (lux)", "temp_mean": "Temperatura (°C)"},
+            title="Relação entre temperatura e iluminação"
+        )
+        fig_scatter.update_layout(template="plotly_white")
+        st.plotly_chart(fig_scatter, use_container_width=True)
 
-    st.subheader("Correlação entre temperatura e iluminação")
-    fig_scatter = px.scatter(
-        agg,
-        x="ilum_mean",
-        y="temp_mean",
-        trendline="ols",
-        labels={"ilum_mean": "Iluminação (lux)", "temp_mean": "Temperatura (°C)"},
-        title="Relação entre temperatura e iluminação"
-    )
-    fig_scatter.update_layout(template="plotly_white")
-    st.plotly_chart(fig_scatter, use_container_width=True)
+    with tab4:
+        st.subheader("Previsão (Regressão Linear)")
+        horizon = st.slider("Dias para prever", 1, 60, 7)
+        y = agg["temp_mean"].values
+        X = np.arange(len(y)).reshape(-1,1)
+        model = LinearRegression()
+        model.fit(X, y)
 
-    st.subheader("Previsão (Regressão Linear)")
-    horizon = st.slider("Dias para prever", 1, 60, 7)
-    y = agg["temp_mean"].values
-    X = np.arange(len(y)).reshape(-1,1)
-    model = LinearRegression()
-    model.fit(X, y)
+        future_idx = np.arange(len(y), len(y)+horizon).reshape(-1,1)
+        preds = model.predict(future_idx)
+        future_dates = pd.date_range(agg["dia"].max() + timedelta(days=1), periods=horizon)
 
-    future_idx = np.arange(len(y), len(y)+horizon).reshape(-1,1)
-    preds = model.predict(future_idx)
-    future_dates = pd.date_range(agg["dia"].max() + timedelta(days=1), periods=horizon)
+        fig4 = go.Figure()
+        fig4.add_trace(go.Scatter(x=agg["dia"], y=y, mode="lines+markers", name="Histórico"))
+        fig4.add_trace(go.Scatter(x=future_dates, y=preds, mode="lines+markers", name="Previsão"))
+        fig4.update_layout(template="plotly_white")
+        st.plotly_chart(fig4, use_container_width=True)
 
-    fig4 = go.Figure()
-    fig4.add_trace(go.Scatter(x=agg["dia"], y=y, mode="lines+markers", name="Histórico"))
-    fig4.add_trace(go.Scatter(x=future_dates, y=preds, mode="lines+markers", name="Previsão"))
-    fig4.update_layout(template="plotly_white")
-    st.plotly_chart(fig4, use_container_width=True)
-
-    forecast_df = pd.DataFrame({
-        "data": future_dates,
-        "previsao_temp": preds
-    })
-
-    st.dataframe(
-        forecast_df.style.format({
-            "previsao_temp": "{:.2f}"
+        forecast_df = pd.DataFrame({
+            "data": future_dates,
+            "previsao_temp": preds
         })
-    )
 
+        st.dataframe(
+            forecast_df.style.format({
+                "previsao_temp": "{:.2f}"
+            })
+        )
+    
+    st.markdown("---")
+    
     st.subheader("Alertas automáticos")
 
     alerts = []
@@ -249,3 +262,4 @@ elif page == "Comparação de Intervalos":
     colA.dataframe(A.style.format(format_cols))
     colB.write("Intervalo B")
     colB.dataframe(B.style.format(format_cols))
+    
