@@ -34,11 +34,11 @@ st.markdown(
 )
 
 DB_CONFIG = {
-    "host": "dataiesb.iesbtech.com.br",
-    "port": "5432",
-    "database": "2212120006_Marco",
-    "user": "2212120006_Marco",
-    "password": "2212120006_Marco"
+    "host": "DB_HOST",
+    "port": "DB_´PRT",
+    "database": "DB_DATABASE",
+    "user": "DB_USER",
+    "password": "DB_PASSWORD"
 }
 
 @st.cache_data(ttl=1800)
@@ -263,3 +263,4 @@ elif page == "Comparação de Intervalos":
     colB.write("Intervalo B")
     colB.dataframe(B.style.format(format_cols))
     
+
